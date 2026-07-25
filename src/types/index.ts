@@ -5,7 +5,7 @@ export interface Student {
   studentId: string; // Auto generated short code (e.g. SK-1001)
   name: string;
   class: string;
-  batch: string;
+  batch?: string;
   monthlyFee: number;
   parentName: string;
   parentMobile: string;
