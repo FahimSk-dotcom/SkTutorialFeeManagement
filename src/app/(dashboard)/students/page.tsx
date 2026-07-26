@@ -18,7 +18,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Student, Payment } from "@/types";
 import { toast } from "sonner";
 
-const CLASSES = ["All", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9", "Class 10", "Class 11", "Class 12"];
+const CLASSES = ["All","Jr.Kg","Sr.Kg", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6", "Class 7", "Class 8", "Class 9"];
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<any[]>([]);
