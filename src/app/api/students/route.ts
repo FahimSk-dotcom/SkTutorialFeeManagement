@@ -26,9 +26,14 @@ export async function GET(req: Request) {
     if (status !== "All") {
       query.status = status;
     }
+
+    // Flexible class filter supporting both "Class Sr.Kg" and "Sr.Kg", "Class 6" and "6"
     if (className !== "All") {
-      query.class = className;
+      const clean = className.replace(/^class\s+/i, "").trim();
+      const escaped = clean.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      query.class = new RegExp(`^(Class\\s+)?${escaped}$`, "i");
     }
+
     if (search.trim()) {
       const reg = new RegExp(search.trim(), "i");
       query.$or = [
