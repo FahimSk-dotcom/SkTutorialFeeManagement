@@ -92,6 +92,7 @@ export function Header({
         {onOpenQuickCollect && (
           <button
             onClick={onOpenQuickCollect}
+            suppressHydrationWarning
             className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all active:scale-95"
           >
             <PlusCircle className="w-4 h-4" />
@@ -103,6 +104,7 @@ export function Header({
         <div className="flex items-center bg-muted/80 p-1 rounded-xl border border-border/60" suppressHydrationWarning>
           <button
             onClick={() => setTheme("light")}
+            suppressHydrationWarning
             className={`p-1.5 rounded-lg text-xs transition-all ${
               mounted && theme === "light" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
             }`}
@@ -112,6 +114,7 @@ export function Header({
           </button>
           <button
             onClick={() => setTheme("dark")}
+            suppressHydrationWarning
             className={`p-1.5 rounded-lg text-xs transition-all ${
               mounted && theme === "dark" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
             }`}
@@ -121,6 +124,7 @@ export function Header({
           </button>
           <button
             onClick={() => setTheme("system")}
+            suppressHydrationWarning
             className={`p-1.5 rounded-lg text-xs transition-all ${
               mounted && theme === "system" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground"
             }`}
@@ -137,6 +141,7 @@ export function Header({
           </div>
           <button
             onClick={handleLogout}
+            suppressHydrationWarning
             className="p-1.5 text-muted-foreground hover:text-rose-600 transition-colors"
             title="Logout"
           >
