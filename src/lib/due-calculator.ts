@@ -10,23 +10,40 @@ export function getMonthName(month: number): string {
 }
 
 /**
- * Calculates dynamic fee due status for a student given their payments
+ * Calculates dynamic fee due status for a student given their payments.
+ * 
+ * Logic:
+ * - When a student takes admission on a date (e.g., 27-07-2026):
+ * - The 1st tuition month is July 2026 (Month 7).
+ * - The fee for July 2026 becomes DUE 1 month later on 27-08-2026.
+ * - Before 27-08-2026, July 2026 is NOT due yet.
+ * - On/After 27-08-2026, July 2026 is Due/Overdue until paid.
+ * - The 2nd tuition month (August 2026) becomes DUE on 27-09-2026, and so on.
  */
 export function calculateStudentDueStatus(
   student: Student,
   payments: Payment[],
   currentDateObj: Date = new Date()
 ): DynamicDueResult {
+  if (!student.admissionDate) {
+    return {
+      status: "PAID",
+      totalDueMonths: 0,
+      totalPendingAmount: 0,
+      pendingMonths: [],
+      paidMonthsCount: 0,
+    };
+  }
+
   const admission = new Date(student.admissionDate);
-  const admissionDay = admission.getDate();
   const admissionYear = admission.getFullYear();
-  const admissionMonth = admission.getMonth() + 1; // 1-indexed
+  const admissionMonth = admission.getMonth() + 1; // 1-indexed (1-12)
+  const admissionDay = admission.getDate();
 
-  const targetYear = currentDateObj.getFullYear();
-  const targetMonth = currentDateObj.getMonth() + 1;
-  const targetDay = currentDateObj.getDate();
+  // Reset time portions for exact date comparison
+  const curDate = new Date(currentDateObj.getFullYear(), currentDateObj.getMonth(), currentDateObj.getDate());
 
-  // Create a map of paid year-months
+  // Create a set of paid year-months
   const paidSet = new Set<string>();
   payments.forEach((p) => {
     paidSet.add(`${p.year}-${p.month}`);
@@ -35,31 +52,48 @@ export function calculateStudentDueStatus(
   const pendingMonths: PendingMonthDetail[] = [];
   let paidMonthsCount = 0;
 
-  let y = admissionYear;
-  let m = admissionMonth;
+  // Iterate tuition cycles starting from admission month (k = 0)
+  let k = 0;
+  while (true) {
+    // Determine tuition month m & year y for cycle index k
+    let m = admissionMonth + k;
+    let y = admissionYear;
+    while (m > 12) {
+      m -= 12;
+      y += 1;
+    }
 
-  while (y < targetYear || (y === targetYear && m <= targetMonth)) {
-    // Days in current iteration month
-    const daysInMonth = new Date(y, m, 0).getDate();
-    const actualDueDay = Math.min(admissionDay, daysInMonth);
+    // Due date for tuition month (m, y) is 1 month AFTER tuition month starts (i.e., k+1 months after admission)
+    let dueY = admissionYear;
+    let dueM = admissionMonth + (k + 1);
+    while (dueM > 12) {
+      dueM -= 12;
+      dueY += 1;
+    }
+    const maxDaysInDueMonth = new Date(dueY, dueM, 0).getDate();
+    const actualDueDay = Math.min(admissionDay, maxDaysInDueMonth);
+    const dueDate = new Date(dueY, dueM - 1, actualDueDay);
 
-    const isCurrentIterationMonth = y === targetYear && m === targetMonth;
-    const isDueDayPassed = targetDay > actualDueDay;
-    const isDueToday = isCurrentIterationMonth && targetDay === actualDueDay;
-
-    const isMonthDue = !isCurrentIterationMonth || isDueToday || isDueDayPassed;
+    // If due date for this tuition month is in the future beyond today, stop checking
+    if (dueDate > curDate) {
+      break;
+    }
 
     const key = `${y}-${m}`;
     const isPaid = paidSet.has(key);
 
     if (isPaid) {
       paidMonthsCount++;
-    } else if (isMonthDue) {
-      // It is due and unpaid
-      const isOverdue = !isDueToday && (y < targetYear || (y === targetYear && m < targetMonth) || (isCurrentIterationMonth && isDueDayPassed));
+    } else {
+      // Due date has arrived or passed and fee for month (m, y) is unpaid
+      const isDueToday =
+        curDate.getFullYear() === dueDate.getFullYear() &&
+        curDate.getMonth() === dueDate.getMonth() &&
+        curDate.getDate() === dueDate.getDate();
+      const isOverdue = curDate > dueDate;
 
       const monthName = getMonthName(m);
-      const dueDateFormatted = `${y}-${String(m).padStart(2, "0")}-${String(actualDueDay).padStart(2, "0")}`;
+      const dueDateFormatted = `${dueY}-${String(dueM).padStart(2, "0")}-${String(actualDueDay).padStart(2, "0")}`;
 
       pendingMonths.push({
         month: m,
@@ -72,12 +106,7 @@ export function calculateStudentDueStatus(
       });
     }
 
-    // Move to next month
-    m++;
-    if (m > 12) {
-      m = 1;
-      y++;
-    }
+    k++;
   }
 
   // Status determination
